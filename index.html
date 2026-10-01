@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTrack Pulse - Student Behavior Reporting & Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .nav-tab-active { background-color: #0284c7; color: white; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-500 text-white p-2 rounded-xl flex items-center justify-center shadow">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight text-white">EduTrack<span class="text-brand-500">Pulse</span></span>
+                    <span class="hidden sm:inline-block ml-2 text-[11px] font-semibold bg-slate-800 text-brand-100 px-2 py-0.5 rounded-full border border-slate-700">Behavior Portal</span>
+                </div>
+            </div>
+
+            <!-- Role Switcher & Live Time -->
+            <div class="flex items-center space-x-3 sm:space-x-5">
+                <div class="hidden md:flex flex-col text-right text-xs">
+                    <span class="text-slate-400 font-mono" id="headerLiveClock">--:--:--</span>
+                    <span class="text-slate-200 font-medium">Class 10-A • Room 302</span>
+                </div>
+
+                <div class="h-8 w-px bg-slate-700 hidden md:block"></div>
+
+                <!-- Role Selector Toggle Button -->
+                <div class="bg-slate-800 p-1 rounded-xl border border-slate-700 flex items-center">
+                    <button id="roleTeacherBtn" onclick="setRole('teacher')" class="px-3 py-1 text-xs font-semibold rounded-lg transition-all text-white bg-brand-600 shadow">
+                        <i class="fa-solid fa-chalkboard-user mr-1"></i> Teacher
+                    </button>
+                    <button id="roleAdminBtn" onclick="setRole('admin')" class="px-3 py-1 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-user-shield mr-1"></i> Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <!-- Mobile Navigation Tabs Switcher -->
+        <div class="flex sm:hidden bg-white p-1 rounded-xl border border-slate-200 shadow-sm gap-1">
+            <button onclick="switchMobileTab('form')" id="tabBtnForm" class="flex-1 py-2 text-xs font-semibold text-center rounded-lg bg-brand-600 text-white">
+                <i class="fa-solid fa-pen-to-square mr-1"></i> File Report
+            </button>
+            <button onclick="switchMobileTab('dashboard')" id="tabBtnDash" class="flex-1 py-2 text-xs font-semibold text-center rounded-lg text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard & Logs
+            </button>
+        </div>
+
+        <!-- Metric KPI Cards Dashboard -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <!-- Total Reports -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3.5">
+                <div class="p-3 bg-blue-50 text-brand-600 rounded-xl">
+                    <i class="fa-solid fa-clipboard-list text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Reports</div>
+                    <div class="text-2xl font-black text-slate-900" id="statTotalReports">0</div>
+                    <div class="text-[10px] text-slate-500">Saved in LocalStorage</div>
+                </div>
+            </div>
+
+            <!-- Pending Review -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3.5">
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                    <i class="fa-solid fa-hourglass-half text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending Review</div>
+                    <div class="text-2xl font-black text-amber-600" id="statPendingReports">0</div>
+                    <div class="text-[10px] text-slate-500">Awaiting Admin action</div>
+                </div>
+            </div>
+
+            <!-- Reviewed Reports -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3.5">
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <i class="fa-solid fa-circle-check text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reviewed</div>
+                    <div class="text-2xl font-black text-emerald-600" id="statReviewedReports">0</div>
+                    <div class="text-[10px] text-slate-500">Processed & Closed</div>
+                </div>
+            </div>
+
+            <!-- High Severity -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3.5">
+                <div class="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Severity</div>
+                    <div class="text-2xl font-black text-rose-600" id="statHighSeverity">0</div>
+                    <div class="text-[10px] text-slate-500">Critical incidents</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT: Behavior Reporting Form -->
+            <section id="formSection" class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-brand-600"></i> Teacher Behavior Report Form
+                        </h2>
+                        <p class="text-xs text-slate-500">Report serious or repeated student behavior issues</p>
+                    </div>
+                    <button id="resetFormBtn" type="button" class="text-xs text-slate-500 hover:text-slate-800 font-medium bg-white border border-slate-200 px-2.5 py-1 rounded-lg transition-colors shadow-sm">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                    </button>
+                </div>
+
+                <form id="incidentForm" class="p-4 sm:p-5 space-y-4 sm:space-y-5 flex-grow overflow-y-auto">
+                    
+                    <!-- 1. Student Selection -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">1. Select Student <span class="text-rose-500">*</span></label>
+                            <span class="text-[10px] text-slate-400">Searchable list</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mb-2">
+                            <select id="gradeFilter" class="col-span-1 text-xs border border-slate-300 rounded-lg p-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="ALL">All Grades</option>
+                                <option value="Grade 10" selected>Grade 10</option>
+                                <option value="Grade 9">Grade 9</option>
+                                <option value="Grade 11">Grade 11</option>
+                            </select>
+                            <div class="col-span-2 relative">
+                                <input type="text" id="studentSearch" placeholder="Filter student name..." class="w-full text-xs border border-slate-300 rounded-lg p-2 pl-8 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                            </div>
+                        </div>
+
+                        <select id="studentSelect" required class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-2.5 bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                            <option value="" disabled selected>-- Select Student --</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Severity Selection -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">2. Incident Severity <span class="text-rose-500">*</span></label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="severity" value="Low" class="peer sr-only">
+                                <div class="text-center p-2 sm:p-2.5 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-800 transition-all">
+                                    <i class="fa-solid fa-circle-info text-emerald-500 block text-base mb-0.5"></i>
+                                    <span class="text-xs font-bold block">Low</span>
+                                    <span class="text-[9px] text-slate-500 block">Minor disruption</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="severity" value="Medium" class="peer sr-only" checked>
+                                <div class="text-center p-2 sm:p-2.5 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-800 transition-all">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 block text-base mb-0.5"></i>
+                                    <span class="text-xs font-bold block">Medium</span>
+                                    <span class="text-[9px] text-slate-500 block">Repeated issue</span>
+                                </div>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input type="radio" name="severity" value="High" class="peer sr-only">
+                                <div class="text-center p-2 sm:p-2.5 rounded-xl border-2 border-slate-200 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-800 transition-all">
+                                    <i class="fa-solid fa-circle-radiation text-rose-500 block text-base mb-0.5"></i>
+                                    <span class="text-xs font-bold block">High</span>
+                                    <span class="text-[9px] text-slate-500 block">Severe / Safety risk</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 3. Behavior Category Selection -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">3. Behavior Issue Type <span class="text-rose-500">*</span></label>
+                        <div class="flex flex-wrap gap-1.5" id="categoryChips">
+                            <button type="button" data-value="Classroom Disruption" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Classroom Disruption</button>
+                            <button type="button" data-value="Verbal/Physical Aggression" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Aggression</button>
+                            <button type="button" data-value="Refusal / Defiance" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Refusal / Defiance</button>
+                            <button type="button" data-value="Academic Dishonesty" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Academic Dishonesty</button>
+                            <button type="button" data-value="Electronic Device Misuse" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Device Misuse</button>
+                            <button type="button" data-value="Property Damage" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Property Damage</button>
+                            <button type="button" data-value="Safety Concern" class="chip-btn px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium transition-colors">Safety Concern</button>
+                        </div>
+                        <input type="hidden" id="selectedCategory" name="category" value="Classroom Disruption" required>
+                    </div>
+
+                    <!-- 4. Quick Templates & Description -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">4. Description <span class="text-rose-500">*</span></label>
+                            <span class="text-[10px] text-slate-400">Quick insert phrases:</span>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <button type="button" onclick="insertQuickPhrase('Repeatedly interrupted class instruction despite 2 warnings.')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded border border-slate-200">+ Interrupted lesson</button>
+                            <button type="button" onclick="insertQuickPhrase('Refused direct teacher instruction during active group work.')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded border border-slate-200">+ Refused instruction</button>
+                            <button type="button" onclick="insertQuickPhrase('Used inappropriate language towards a classmate.')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded border border-slate-200">+ Inappropriate language</button>
+                        </div>
+
+                        <textarea id="descriptionInput" rows="3" required placeholder="Describe the factual behavior, context, interventions attempted, and immediate outcome..." class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all resize-none"></textarea>
+                    </div>
+
+                    <!-- 5. Live Date & Time -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">5. Automatic Incident Timestamp</label>
+                            <button type="button" id="toggleTimeEdit" class="text-[11px] text-brand-600 font-semibold hover:underline">Edit Time</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="date" id="incidentDate" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-slate-50 focus:bg-white outline-none" readonly>
+                            <input type="time" id="incidentTime" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-slate-50 focus:bg-white outline-none" readonly>
+                        </div>
+                    </div>
+
+                    <!-- 6. Notifications Audience -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">6. Notification Recipients</label>
+                        <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                            <label class="flex items-center space-x-2.5 cursor-pointer">
+                                <input type="checkbox" id="notifyParents" checked class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4 w-4">
+                                <div>
+                                    <span class="font-semibold text-slate-800">Parents / Guardians</span>
+                                    <span class="text-slate-500 block text-[10px]">Instant SMS & Parent Portal alert</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center space-x-2.5 cursor-pointer">
+                                <input type="checkbox" id="notifyAdmin" checked class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4 w-4">
+                                <div>
+                                    <span class="font-semibold text-slate-800">School Admin / Vice Principal</span>
+                                    <span class="text-slate-500 block text-[10px]">Flagged in Admin review queue</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center space-x-2.5 cursor-pointer">
+                                <input type="checkbox" id="notifyCounselor" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4 w-4">
+                                <div>
+                                    <span class="font-semibold text-slate-800">Guidance Counselor</span>
+                                    <span class="text-slate-500 block text-[10px]">Counseling record update</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Save & Dispatch Report</span>
+                    </button>
+                </form>
+            </section>
+
+            <section id="dashboardSection" class="lg:col-span-7 flex flex-col space-y-4">
+
+                <!-- Filter & Search Toolbar -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-brand-600"></i> Behavior Reports Feed
+                            </h3>
+                            <p class="text-xs text-slate-500">Real-time incident records saved in browser</p>
+                        </div>
+                        <button onclick="resetToSampleData()" class="text-xs text-slate-500 hover:text-slate-800 underline font-medium">
+                            Reset Sample Data
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <!-- Search Box -->
+                        <div class="relative sm:col-span-1">
+                            <input type="text" id="feedSearch" placeholder="Search student, issue..." class="w-full text-xs border border-slate-300 rounded-lg pl-8 pr-3 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <select id="feedStatusFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-slate-50 focus:bg-white outline-none">
+                            <option value="ALL">All Statuses</option>
+                            <option value="Pending">Pending Review</option>
+                            <option value="Reviewed">Reviewed</option>
+                        </select>
+
+                        <!-- Severity Filter -->
+                        <select id="feedSeverityFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-slate-50 focus:bg-white outline-none">
+                            <option value="ALL">All Severities</option>
+                            <option value="High">High Severity</option>
+                            <option value="Medium">Medium Severity</option>
+                            <option value="Low">Low Severity</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Feed Cards List -->
+                <div id="incidentFeedList" class="space-y-3 overflow-y-auto max-h-[720px] pr-1">
+                    <!-- Dynamic rendering of Incident Cards -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL: Admin Review & Details Dialog -->
+    <div id="incidentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div class="flex items-center space-x-3">
+                    <span id="modalSeverityBadge" class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"></span>
+                    <span id="modalStatusBadge" class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"></span>
+                </div>
+                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-5">
+
+                <!-- Student & Meta Header -->
+                <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg sm:text-xl" id="modalStudentName">Student Incident Details</h3>
+                        <div class="text-xs text-slate-500 space-x-2 mt-0.5">
+                            <span id="modalStudentId">STU-000</span>
+                            <span>•</span>
+                            <span id="modalStudentGrade">Grade --</span>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs text-slate-500">
+                        <div class="font-semibold text-slate-700" id="modalTimestamp">--</div>
+                        <div>Reporter: <span id="modalReporter" class="font-medium text-slate-800">Ms. S. Miller</span></div>
+                    </div>
+                </div>
+
+                <!-- Issue Details -->
+                <div>
+                    <div class="text-xs font-bold text-brand-700 uppercase tracking-wider mb-1" id="modalCategory">Behavior Category</div>
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed" id="modalDescription">
+                        --
+                    </div>
+                </div>
+
+                <!-- SMS & Email Dispatch Preview -->
+                <div class="bg-brand-50/60 border border-brand-100 rounded-xl p-3.5 space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between text-brand-900 font-bold">
+                        <span><i class="fa-solid fa-paper-plane mr-1"></i> Parent Portal & SMS Dispatch Notice</span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold">Sent</span>
+                    </div>
+                    <p class="text-slate-700 italic font-mono bg-white p-2.5 rounded border border-slate-200 text-[11px]" id="modalSmsPreview">
+                        --
+                    </p>
+                </div>
+
+                <!-- Admin Action Box (Role dependent) -->
+                <div id="adminActionBox" class="p-4 bg-slate-100 rounded-xl border border-slate-200 space-y-3">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-shield text-brand-600"></i> Admin / Vice Principal Action Section
+                    </h4>
+                    
+                    <div id="adminReviewForm">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Administrative Notes / Action Taken:</label>
+                        <textarea id="adminNotesInput" rows="2" placeholder="e.g. Conducted parent call, scheduled counseling session, issued warning..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-500 outline-none mb-2 bg-white"></textarea>
+                        
+                        <div class="flex justify-end gap-2">
+                            <button type="button" id="markReviewedBtn" onclick="submitAdminReview()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-check"></i> Mark as Reviewed & Actioned
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Already Reviewed Notes Banner -->
+                    <div id="alreadyReviewedBanner" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1">
+                        <div class="font-bold text-emerald-800 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i> Reviewed by School Admin
+                        </div>
+                        <p class="text-slate-700" id="modalAdminNotesDisplay">No notes recorded.</p>
+                        <span class="text-[10px] text-slate-400 block" id="modalReviewedTimestamp">--</span>
+                    </div>
+                </div>
+
+                <!-- Audit Log -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Audit & Resolution Log</h4>
+                    <div class="space-y-2 pl-3 border-l-2 border-slate-200 ml-1 text-xs" id="modalAuditTimeline">
+                        <!-- Dynamic audit events -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3.5 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+                    Close Window
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Banner -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-in-out bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-700 text-xs">
+        <div class="p-1 bg-emerald-500 rounded-full text-white text-xs w-5 h-5 flex items-center justify-center">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <span class="font-medium" id="toastMessage">Report filed and saved!</span>
+    </div>
+
+    <script>
+        // Storage Key
+        const STORAGE_KEY = "EDUTRACK_BEHAVIOR_REPORTS_V2";
+
+        // Current Role State ('teacher' or 'admin')
+        let currentRole = "teacher";
+        let activeModalReportId = null;
+
+        // Mock Students List
+        const mockStudents = [
+            { id: "STU-101", name: "Alex Johnson", grade: "Grade 10", parentContact: "+1 (555) 234-5678" },
+            { id: "STU-102", name: "Sarah Smith", grade: "Grade 10", parentContact: "+1 (555) 876-5432" },
+            { id: "STU-103", name: "Ethan Lee", grade: "Grade 10", parentContact: "+1 (555) 345-6789" },
+            { id: "STU-104", name: "Maya Patel", grade: "Grade 9", parentContact: "+1 (555) 987-6543" },
+            { id: "STU-105", name: "Lucas Rodriguez", grade: "Grade 11", parentContact: "+1 (555) 456-7890" },
+            { id: "STU-106", name: "Chloe Davis", grade: "Grade 9", parentContact: "+1 (555) 654-3210" }
+        ];
+
+        // Default Sample Reports for initial load
+        const sampleReports = [
+            {
+                id: "REP-9042",
+                studentId: "STU-101",
+                studentName: "Alex Johnson",
+                grade: "Grade 10",
+                severity: "High",
+                category: "Verbal/Physical Aggression",
+                description: "Shouted aggressively at peer during group lab work and slammed workstation desk.",
+                date: "2026-10-01",
+                time: "09:45",
+                recipients: ["Parents / Guardians", "School Admin"],
+                status: "Pending",
+                adminNotes: "",
+                audit: [
+                    { time: "09:45 AM", text: "Incident submitted by Ms. S. Miller" },
+                    { time: "09:46 AM", text: "SMS Alert dispatched to Parent" }
+                ]
+            },
+            {
+                id: "REP-9041",
+                studentId: "STU-103",
+                studentName: "Ethan Lee",
+                grade: "Grade 10",
+                severity: "Medium",
+                category: "Electronic Device Misuse",
+                description: "Repeatedly played mobile games on desk despite two explicit warnings.",
+                date: "2026-10-01",
+                time: "08:30",
+                recipients: ["Parents / Guardians"],
+                status: "Reviewed",
+                adminNotes: "Contacted student during advisory period. Phone held in office until end of school day.",
+                reviewedTime: "2026-10-01 10:15 AM",
+                audit: [
+                    { time: "08:30 AM", text: "Incident submitted by Ms. S. Miller" },
+                    { time: "10:15 AM", text: "Marked as Reviewed by Vice Principal Office" }
+                ]
+            },
+            {
+                id: "REP-9038",
+                studentId: "STU-102",
+                studentName: "Sarah Smith",
+                grade: "Grade 10",
+                severity: "Low",
+                category: "Classroom Disruption",
+                description: "Excessive talking during quiet study hour. Promptly adjusted behavior after verbal prompt.",
+                date: "2026-09-30",
+                time: "14:15",
+                recipients: ["Parents / Guardians"],
+                status: "Reviewed",
+                adminNotes: "Logged for record. No further discipline needed.",
+                reviewedTime: "2026-09-30 15:00 PM",
+                audit: [
+                    { time: "02:15 PM", text: "Incident logged" },
+                    { time: "03:00 PM", text: "Reviewed by Grade Lead" }
+                ]
+            }
+        ];
+
+        // Global Reports Array
+        let incidentReports = [];
+
+        window.onload = function() {
+            initLiveClock();
+            loadReportsFromStorage();
+            populateStudentDropdown();
+            initAutoTimestamp();
+            initCategoryChips();
+            renderIncidentFeed();
+            updateStats();
+
+            // Event Listeners
+            document.getElementById('gradeFilter').addEventListener('change', populateStudentDropdown);
+            document.getElementById('studentSearch').addEventListener('input', populateStudentDropdown);
+            document.getElementById('feedSearch').addEventListener('input', renderIncidentFeed);
+            document.getElementById('feedStatusFilter').addEventListener('change', renderIncidentFeed);
+            document.getElementById('feedSeverityFilter').addEventListener('change', renderIncidentFeed);
+            document.getElementById('toggleTimeEdit').addEventListener('click', toggleTimestampEdit);
+            document.getElementById('resetFormBtn').addEventListener('click', resetForm);
+            document.getElementById('incidentForm').addEventListener('submit', handleFormSubmit);
+        };
+
+        // LocalStorage Helpers
+        function loadReportsFromStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    incidentReports = JSON.parse(saved);
+                } catch(e) {
+                    incidentReports = [...sampleReports];
+                }
+            } else {
+                incidentReports = [...sampleReports];
+                saveReportsToStorage();
+            }
+        }
+
+        function saveReportsToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(incidentReports));
+        }
+
+        function resetToSampleData() {
+            if (confirm("Reset all reports back to default sample data?")) {
+                incidentReports = [...sampleReports];
+                saveReportsToStorage();
+                renderIncidentFeed();
+                updateStats();
+                showToast("Data reset to sample reports.");
+            }
+        }
+
+        // Role Toggle (Teacher vs Admin)
+        function setRole(role) {
+            currentRole = role;
+            const tBtn = document.getElementById('roleTeacherBtn');
+            const aBtn = document.getElementById('roleAdminBtn');
+
+            if (role === 'teacher') {
+                tBtn.className = "px-3 py-1 text-xs font-semibold rounded-lg transition-all text-white bg-brand-600 shadow";
+                aBtn.className = "px-3 py-1 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+                showToast("Switched to Teacher View");
+            } else {
+                aBtn.className = "px-3 py-1 text-xs font-semibold rounded-lg transition-all text-white bg-purple-600 shadow";
+                tBtn.className = "px-3 py-1 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+                showToast("Switched to Admin Review Mode");
+            }
+            renderIncidentFeed();
+        }
+
+        // Mobile Tab Switcher
+        function switchMobileTab(tab) {
+            const formSec = document.getElementById('formSection');
+            const dashSec = document.getElementById('dashboardSection');
+            const tabBtnForm = document.getElementById('tabBtnForm');
+            const tabBtnDash = document.getElementById('tabBtnDash');
+
+            if (tab === 'form') {
+                formSec.classList.remove('hidden');
+                dashSec.classList.add('hidden');
+                tabBtnForm.className = "flex-1 py-2 text-xs font-semibold text-center rounded-lg bg-brand-600 text-white";
+                tabBtnDash.className = "flex-1 py-2 text-xs font-semibold text-center rounded-lg text-slate-600 hover:bg-slate-100";
+            } else {
+                formSec.classList.add('hidden');
+                dashSec.classList.remove('hidden');
+                tabBtnDash.className = "flex-1 py-2 text-xs font-semibold text-center rounded-lg bg-brand-600 text-white";
+                tabBtnForm.className = "flex-1 py-2 text-xs font-semibold text-center rounded-lg text-slate-600 hover:bg-slate-100";
+            }
+        }
+
+        // Live Clock
+        function initLiveClock() {
+            const updateClock = () => {
+                const now = new Date();
+                document.getElementById('headerLiveClock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' • ' + now.toLocaleDateString();
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // Auto Timestamp
+        function initAutoTimestamp() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            document.getElementById('incidentDate').value = dateStr;
+            document.getElementById('incidentTime').value = timeStr;
+        }
+
+        function toggleTimestampEdit() {
+            const dateInput = document.getElementById('incidentDate');
+            const timeInput = document.getElementById('incidentTime');
+            const btn = document.getElementById('toggleTimeEdit');
+
+            if (dateInput.hasAttribute('readonly')) {
+                dateInput.removeAttribute('readonly');
+                timeInput.removeAttribute('readonly');
+                dateInput.classList.remove('bg-slate-50');
+                timeInput.classList.remove('bg-slate-50');
+                btn.innerText = "Lock Time";
+            } else {
+                dateInput.setAttribute('readonly', 'true');
+                timeInput.setAttribute('readonly', 'true');
+                dateInput.classList.add('bg-slate-50');
+                timeInput.classList.add('bg-slate-50');
+                btn.innerText = "Edit Time";
+            }
+        }
+
+        // Populate Student Dropdown
+        function populateStudentDropdown() {
+            const gradeVal = document.getElementById('gradeFilter').value;
+            const searchVal = document.getElementById('studentSearch').value.toLowerCase();
+            const selectEl = document.getElementById('studentSelect');
+
+            selectEl.innerHTML = '<option value="" disabled selected>-- Choose Student --</option>';
+
+            const filtered = mockStudents.filter(s => {
+                const matchesGrade = (gradeVal === 'ALL' || s.grade === gradeVal);
+                const matchesSearch = s.name.toLowerCase().includes(searchVal) || s.id.toLowerCase().includes(searchVal);
+                return matchesGrade && matchesSearch;
+            });
+
+            filtered.forEach(student => {
+                const opt = document.createElement('option');
+                opt.value = student.id;
+                opt.textContent = `${student.name} (${student.grade}) - ${student.id}`;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        // Category Chips logic
+        function initCategoryChips() {
+            const chips = document.querySelectorAll('#categoryChips .chip-btn');
+            const hiddenInput = document.getElementById('selectedCategory');
+
+            chips[0].classList.add('bg-brand-600', 'text-white', 'border-brand-600');
+            chips[0].classList.remove('bg-slate-50', 'text-slate-700');
+
+            chips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    chips.forEach(c => {
+                        c.classList.remove('bg-brand-600', 'text-white', 'border-brand-600');
+                        c.classList.add('bg-slate-50', 'text-slate-700');
+                    });
+                    this.classList.remove('bg-slate-50', 'text-slate-700');
+                    this.classList.add('bg-brand-600', 'text-white', 'border-brand-600');
+                    hiddenInput.value = this.getAttribute('data-value');
+                });
+            });
+        }
+
+        function insertQuickPhrase(phrase) {
+            const textarea = document.getElementById('descriptionInput');
+            if (textarea.value.trim() === '') {
+                textarea.value = phrase;
+            } else {
+                textarea.value += ' ' + phrase;
+            }
+            textarea.focus();
+        }
+
+        // Handle New Report Submission
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const studentId = document.getElementById('studentSelect').value;
+            if (!studentId) {
+                showToast("Please select a student from the list.");
+                return;
+            }
+
+            const studentObj = mockStudents.find(s => s.id === studentId);
+            const severityVal = document.querySelector('input[name="severity"]:checked').value;
+            const categoryVal = document.getElementById('selectedCategory').value;
+            const descriptionVal = document.getElementById('descriptionInput').value;
+            const dateVal = document.getElementById('incidentDate').value;
+            const timeVal = document.getElementById('incidentTime').value;
+
+            const recipients = [];
+            if (document.getElementById('notifyParents').checked) recipients.push("Parents / Guardians");
+            if (document.getElementById('notifyAdmin').checked) recipients.push("School Admin");
+            if (document.getElementById('notifyCounselor').checked) recipients.push("Guidance Counselor");
+
+            const formattedTime = formatTime12hr(timeVal);
+
+            const newIncident = {
+                id: "REP-" + Math.floor(1000 + Math.random() * 9000),
+                studentId: studentObj.id,
+                studentName: studentObj.name,
+                grade: studentObj.grade,
+                severity: severityVal,
+                category: categoryVal,
+                description: descriptionVal,
+                date: dateVal,
+                time: timeVal,
+                recipients: recipients,
+                status: "Pending",
+                adminNotes: "",
+                audit: [
+                    { time: formattedTime, text: `Report submitted by Ms. S. Miller` },
+                    { time: formattedTime, text: `Dispatched to ${recipients.join(', ')}` }
+                ]
+            };
+
+            incidentReports.unshift(newIncident);
+            saveReportsToStorage();
+
+            renderIncidentFeed();
+            updateStats();
+            resetForm();
+            showToast(`Report filed for ${studentObj.name} and saved!`);
+
+            // Auto switch to feed on mobile
+            if (window.innerWidth < 640) {
+                switchMobileTab('dashboard');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('incidentForm').reset();
+            initAutoTimestamp();
+            populateStudentDropdown();
+            const chips = document.querySelectorAll('#categoryChips .chip-btn');
+            if (chips[0]) chips[0].click();
+        }
+
+        function renderIncidentFeed() {
+            const feedContainer = document.getElementById('incidentFeedList');
+            const searchVal = document.getElementById('feedSearch').value.toLowerCase();
+            const statusVal = document.getElementById('feedStatusFilter').value;
+            const severityVal = document.getElementById('feedSeverityFilter').value;
+
+            feedContainer.innerHTML = '';
+
+            const filteredReports = incidentReports.filter(rep => {
+                const matchesSearch = rep.studentName.toLowerCase().includes(searchVal) || 
+                                      rep.category.toLowerCase().includes(searchVal) ||
+                                      rep.description.toLowerCase().includes(searchVal) ||
+                                      rep.id.toLowerCase().includes(searchVal);
+                const matchesStatus = (statusVal === 'ALL' || rep.status === statusVal);
+                const matchesSeverity = (severityVal === 'ALL' || rep.severity === severityVal);
+                return matchesSearch && matchesStatus && matchesSeverity;
+            });
+
+            if (filteredReports.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <i class="fa-solid fa-folder-open text-slate-300 text-3xl mb-2"></i>
+                        <p class="text-xs text-slate-500">No matching incident reports found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredReports.forEach(rep => {
+                let severityBadge = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                let borderHighlight = "border-l-emerald-500";
+                let iconClass = "fa-circle-info text-emerald-500";
+
+                if (rep.severity === 'Medium') {
+                    severityBadge = "bg-amber-100 text-amber-800 border-amber-200";
+                    borderHighlight = "border-l-amber-500";
+                    iconClass = "fa-triangle-exclamation text-amber-500";
+                } else if (rep.severity === 'High') {
+                    severityBadge = "bg-rose-100 text-rose-800 border-rose-200";
+                    borderHighlight = "border-l-rose-500";
+                    iconClass = "fa-circle-radiation text-rose-500";
+                }
+
+                const statusBadge = rep.status === 'Reviewed' 
+                    ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-check"></i> Reviewed</span>`
+                    : `<span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-clock"></i> Pending Admin</span>`;
+
+                const cardHtml = `
+                    <div class="bg-white rounded-xl border border-slate-200 border-l-4 ${borderHighlight} p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-start justify-between gap-2 mb-1">
+                            <div>
+                                <span class="font-bold text-slate-900 text-sm">${escapeHtml(rep.studentName)}</span>
+                                <span class="text-xs text-slate-400 ml-1">${rep.grade}</span>
+                            </div>
+                            <div class="flex items-center space-x-1.5">
+                                ${statusBadge}
+                                <span class="text-[10px] px-2 py-0.5 rounded-full border ${severityBadge} font-bold uppercase tracking-wider">
+                                    ${rep.severity}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="text-xs font-semibold text-brand-700 mb-1">
+                            ${escapeHtml(rep.category)} <span class="text-slate-300 font-normal">(${rep.id})</span>
+                        </div>
+
+                        <p class="text-xs text-slate-600 line-clamp-2 mb-3">
+                            "${escapeHtml(rep.description)}"
+                        </p>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                            <div>
+                                <i class="fa-regular fa-clock mr-1"></i> ${rep.date} @ ${formatTime12hr(rep.time)}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${currentRole === 'admin' && rep.status === 'Pending' ? `
+                                    <button onclick="openModal('${rep.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-[10px] shadow-sm transition-colors">
+                                        Review Now
+                                    </button>
+                                ` : ''}
+                                <button onclick="openModal('${rep.id}')" class="text-brand-600 hover:text-brand-800 font-bold flex items-center gap-1">
+                                    Details <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                feedContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalReports').innerText = incidentReports.length;
+            
+            const pending = incidentReports.filter(r => r.status === 'Pending').length;
+            document.getElementById('statPendingReports').innerText = pending;
+
+            const reviewed = incidentReports.filter(r => r.status === 'Reviewed').length;
+            document.getElementById('statReviewedReports').innerText = reviewed;
+
+            const high = incidentReports.filter(r => r.severity === 'High').length;
+            document.getElementById('statHighSeverity').innerText = high;
+        }
+
+        // Open Modal and Review Logic
+        function openModal(reportId) {
+            activeModalReportId = reportId;
+            const report = incidentReports.find(r => r.id === reportId);
+            if (!report) return;
+
+            document.getElementById('modalStudentName').innerText = report.studentName;
+            document.getElementById('modalStudentId').innerText = report.studentId;
+            document.getElementById('modalStudentGrade').innerText = report.grade;
+            document.getElementById('modalTimestamp').innerText = `${report.date} ${formatTime12hr(report.time)}`;
+            document.getElementById('modalCategory').innerText = `${report.category} (${report.id})`;
+            document.getElementById('modalDescription').innerText = report.description;
+
+            // Severity Badge
+            const modalBadge = document.getElementById('modalSeverityBadge');
+            modalBadge.innerText = report.severity + " Severity";
+            if (report.severity === 'High') {
+                modalBadge.className = "px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300";
+            } else if (report.severity === 'Medium') {
+                modalBadge.className = "px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300";
+            } else {
+                modalBadge.className = "px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
+            }
+
+            // Status Badge
+            const statusBadge = document.getElementById('modalStatusBadge');
+            if (report.status === 'Reviewed') {
+                statusBadge.innerText = "Reviewed";
+                statusBadge.className = "px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
+            } else {
+                statusBadge.innerText = "Pending Review";
+                statusBadge.className = "px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300";
+            }
+
+            // SMS Preview
+            const smsText = `[EduTrack Alert] Parent Notification: A behavior report (${report.category}) regarding ${report.studentName} was logged at ${formatTime12hr(report.time)}. Details: "${report.description}"`;
+            document.getElementById('modalSmsPreview').innerText = smsText;
+
+            // Admin Action Section rendering
+            const adminForm = document.getElementById('adminReviewForm');
+            const reviewedBanner = document.getElementById('alreadyReviewedBanner');
+            const adminNotesInput = document.getElementById('adminNotesInput');
+
+            if (report.status === 'Reviewed') {
+                adminForm.classList.add('hidden');
+                reviewedBanner.classList.remove('hidden');
+                document.getElementById('modalAdminNotesDisplay').innerText = report.adminNotes || "No detailed admin notes added.";
+                document.getElementById('modalReviewedTimestamp').innerText = `Completed: ${report.reviewedTime || 'N/A'}`;
+            } else {
+                adminForm.classList.remove('hidden');
+                reviewedBanner.classList.add('hidden');
+                adminNotesInput.value = "";
+            }
+
+            // Render Audit Timeline
+            const auditContainer = document.getElementById('modalAuditTimeline');
+            auditContainer.innerHTML = '';
+            report.audit.forEach(item => {
+                const node = `
+                    <div class="relative pl-3 border-l-2 border-brand-500">
+                        <span class="text-[10px] font-bold text-slate-400 block">${item.time}</span>
+                        <span class="text-xs text-slate-700 font-medium">${escapeHtml(item.text)}</span>
+                    </div>
+                `;
+                auditContainer.insertAdjacentHTML('beforeend', node);
+            });
+
+            document.getElementById('incidentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('incidentModal').classList.add('hidden');
+            activeModalReportId = null;
+        }
+
+        // Submit Admin Review Action
+        function submitAdminReview() {
+            if (!activeModalReportId) return;
+
+            const report = incidentReports.find(r => r.id === activeModalReportId);
+            if (!report) return;
+
+            const notes = document.getElementById('adminNotesInput').value.trim();
+            const now = new Date();
+            const timeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString();
+
+            report.status = "Reviewed";
+            report.adminNotes = notes;
+            report.reviewedTime = timeFormatted;
+            report.audit.push({
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                text: `Marked as Reviewed by Admin. Notes: "${notes || 'None'}"`
+            });
+
+            saveReportsToStorage();
+            renderIncidentFeed();
+            updateStats();
+            closeModal();
+            showToast(`Report ${report.id} marked as Reviewed!`);
+        }
+
+        function formatTime12hr(time24) {
+            if (!time24) return "";
+            const [h, m] = time24.split(':');
+            let hour = parseInt(h, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12 || 12;
+            return `${hour}:${m} ${ampm}`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
